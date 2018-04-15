@@ -1,6 +1,8 @@
 package logic;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class Player {
 	
@@ -12,45 +14,41 @@ public class Player {
 	
 	private Position position ;
 
-	private LinkedList<Position> bombPosition;
+	private ArrayList<Position> bombPosition;
 	
-	private Status state;
+	private World world;
 	
-	private boolean worldPermit;
+	private Semaphore atomicExplosion=new Semaphore(1);
 	
-	public enum Status{IDLE,UP,DOWN,RIGHT,LEFT}
 	
 	public Player(Color color , Position position) {
 		this.color=color;
 		this.numBomb=this.inkTank=TANK_VALUE;
 		this.position=new Position(position);
-		bombPosition=new LinkedList<>();
-		state=Status.IDLE;
-		worldPermit=false;
+		bombPosition=new ArrayList<>();
 	}
 	
 	public Player(Color color , Position position , int inkTank) {
 		this.color=color;
 		this.numBomb=this.inkTank=inkTank;
 		this.position=new Position(position);
-		bombPosition=new LinkedList<>();
-		state=Status.IDLE;
-		worldPermit=false;
+		bombPosition=new ArrayList<>();
 	}
 	
 	public Player(Player p){
 		this.color=p.color;
 		this.numBomb=this.inkTank=p.inkTank;
 		this.position=new Position(p.position);
-		bombPosition=new LinkedList<>();
+		bombPosition=new ArrayList<>();
 		for(int i=0;i<p.bombPosition.size();i++){
-			bombPosition.addLast(new Position(p.bombPosition.get(i)));
+			bombPosition.add(new Position(p.bombPosition.get(i)));
 		}
-		state=Status.IDLE;
-		worldPermit=false;
 	}
 	
 	public boolean placeBomb(Position p) {
+		try {
+			atomicExplosion.acquire();
+		} catch (InterruptedException e) {}
 		if(inkTank>0) {
 			boolean okInsert=true;
 			for(int i=0;i<bombPosition.size();i++){
@@ -58,12 +56,17 @@ public class Player {
 			}
 			if(okInsert){
 				inkTank--;
-				bombPosition.addLast(p);
+				bombPosition.add(p);
+				new Thread(new Bomb(p)).start();
 			}
+			atomicExplosion.release();
 			return okInsert;
 		}
+		atomicExplosion.release();
 		return false;
 	}
+	
+	
 	
 	public void reloadTank() {
 		if(inkTank==0)inkTank=numBomb;
@@ -82,9 +85,6 @@ public class Player {
 		return position.getY();
 	}
 	
-	public Status getState() {
-		return state;
-	}
 	
 	public final boolean equals(Object arg0) {
 		return color.equals(arg0);
@@ -107,33 +107,55 @@ public class Player {
 	}
 	
 	public void moveUp() {
-		state=Status.UP;
+		if(world==null) throw new UnassignedWorldException();
+		if(position.getY()-1>=0) position.setY(position.getY()-1);
 	}
 
 	public void moveDown() {
-		state=Status.DOWN;
+		if(world==null) throw new UnassignedWorldException();
+		if(position.getY()+1<world.getDimension()) position.setY(position.getY()+1);
 	}
 
 	public void moveLeft() {
-		state=Status.LEFT;
+		if(world==null) throw new UnassignedWorldException();
+		if(position.getX()-1>=0) position.setX(position.getX()-1);
 	}
 
 	public void moveRight() {
-		state=Status.RIGHT;
+		if(world==null) throw new UnassignedWorldException();
+		if(position.getX()+1<world.getDimension()) position.setX(position.getX()-1);
 	}
 	
-	public void move() {
-		if(!worldPermit) throw new ControlException();
-		worldPermit=false;
-		if (state==Status.UP) position.setY(position.getY()-1);
-		else if(state==Status.DOWN) position.setX(position.getY()+1);
-		else if(state==Status.RIGHT) position.setX(position.getX()+1);
-		else if(state==Status.LEFT) position.setX(position.getX()-1);
-		state=Status.IDLE;
+		
+	
+	public void setWorld(World world){
+		this.world=world;
 	}
 	
-	public void permit() {
-		worldPermit=true;
+	private class Bomb implements Runnable{
+        
+		private static final int TIME_EXPLOSION=3;
+		
+		private Position position;
+		
+		public Bomb(Position position) {
+			this.position=position;
+		}
+		
+		public void run() {
+			try {
+				TimeUnit.SECONDS.sleep(TIME_EXPLOSION);
+				Player.this.atomicExplosion.acquire();
+				bombPosition.remove(position);
+				Player.this.atomicExplosion.release();
+				Player.this.world.paint(position, Player.this.color);
+				World w=Player.this.world;
+				w.startVictoryControl();
+			    if(w.checkVictory(Player.this)) world.setWinningPlayer(Player.this);
+			    else w.endVictoryControl();
+			}catch(InterruptedException e) {}
+		}
+		
 	}
 
 }
