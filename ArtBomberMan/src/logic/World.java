@@ -151,6 +151,10 @@ public class World {
 	public Color[][] getColorMatrix(){
 		return colorMatrix;
 	}
+	
+	public Color getDefaultColor() {
+		return Color.GREY;
+	}
 
 	
 

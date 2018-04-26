@@ -9,7 +9,7 @@ public class Main {
 		Player playerOne=new Player(Color.GREEN , new Position(25,49));
 		ArrayList<Player> players=new ArrayList<>();
 		players.add(new Player(Color.BLUE , new Position(0,0)));
-		players.add(new Player(Color.PURPLE , new Position(0,49)));
+		players.add(new Player(Color.PURPLE , new Position(49,0)));
 		World world=new World(playerOne , players);
 		playerOne.setWorld(world);
 		players.get(0).setWorld(world);

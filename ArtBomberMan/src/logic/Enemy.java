@@ -13,7 +13,7 @@ public class Enemy implements Runnable {
 	private Random random = new Random();
 
 	private boolean targetFocussed;
-	
+
 	private World world;
 
 	private int indexTarget, posxTarget, posyTarget;
@@ -39,59 +39,61 @@ public class Enemy implements Runnable {
 	public Enemy(Player player, ArrayList<Player> target) {
 		this.player = player;
 		this.target = target;
-		world=player.getWorld();
+		world = player.getWorld();
 	}
 
 	public void run() {
 		ArrayList<Integer> tempTarget = new ArrayList<Integer>();
-		Position tempPos=null;
-		boolean firstCheck=true;
-		boolean reloaded=false;
+		Position tempPos = null;
+		boolean firstCheck = true;
+		boolean checkPosition = false;
+		boolean reloaded = false;
+		int cont = 0;
 		while (true) {
-			if (player.getInkTank()==0){
-				for(int i=0;i<world.getDimension();i++){
-					for(int j=0;j<world.getDimension();j++){
-						if(world.getColorMatrix()[i][j]==player.getColor()&&firstCheck){
-							tempPos=new Position(j,i);
-						}
-						else if (world.getColorMatrix()[i][j]==player.getColor()){
+			if (!reloaded && player.getInkTank() == 0) {
+				for (int i = 0; i < world.getDimension(); i++) {
+					for (int j = 0; j < world.getDimension(); j++) {
+						if (world.getColorMatrix()[i][j] == player.getColor() && firstCheck) {
+							tempPos = new Position(j, i);
+							firstCheck = false;
+						} else if (world.getColorMatrix()[i][j] == player.getColor()) {
 							int xf = player.getX() - j;
 							int yf = player.getY() - i;
-							double shift=Math.sqrt(Math.abs(xf) ^ 2 + Math.abs(yf) ^ 2);
+							double shift = Math.sqrt(Math.abs(xf) ^ 2 + Math.abs(yf) ^ 2);
 							xf = player.getX() - tempPos.getX();
-						    yf = player.getY() - tempPos.getY();
-						    if(shift-Math.sqrt(Math.abs(xf) ^ 2 + Math.abs(yf) ^ 2)<0) tempPos=new Position(j,i);
+							yf = player.getY() - tempPos.getY();
+							if (shift - Math.sqrt(Math.abs(xf) ^ 2 + Math.abs(yf) ^ 2) < 0)
+								tempPos = new Position(j, i);
 						}
+						reloaded = true;
 					}
-					
+
 				}
-			}
-			else if(!reloaded&&player.getInkTank()==0){
-				if (player.getX() - tempPos.getX() > 0){
+			} else if (player.getInkTank() == 0) {
+				if (player.getX() - tempPos.getX() > 0) {
 					player.moveLeft();
-					reloaded=player.getInkTank()>0;
-				}
-				else if (player.getX() - tempPos.getX() < 0){
+					reloaded = !(player.getInkTank() > 0);
+				} else if (player.getX() - tempPos.getX() < 0) {
 					player.moveRight();
-					reloaded=player.getInkTank()>0;
-				}
-				else if (player.getY() - tempPos.getY() > 0){
+					reloaded = !(player.getInkTank() > 0);
+				} else if (player.getY() - tempPos.getY() > 0) {
 					player.moveUp();
-					reloaded=player.getInkTank()>0;
-				}
-				else if (player.getY() - tempPos.getY() < 0){
+					reloaded = !(player.getInkTank() > 0);
+				} else if (player.getY() - tempPos.getY() < 0) {
 					player.moveDown();
-					reloaded=player.getInkTank()>0;
+					reloaded = !(player.getInkTank() > 0);
 				}
-			}
-			else if (!targetFocussed) {
+			} else if (!targetFocussed) {
+				/*firstCheck = true;
 				for (int i = 0; i < target.size(); i++) {
-					if (checkShift(player, target.get(i)))
-						tempTarget.add(i);
-				}
+					if (checkShift(player, target.get(i))) {
+						//tempTarget.add(i);
+						checkPosition = false;
+					}
+				}*/
 			}
 			if (tempTarget.size() > 0) {
-				if (!targetFocussed) {
+				/*if (!targetFocussed) {
 					indexTarget = random.nextInt(tempTarget.size());
 					posxTarget = target.get(tempTarget.get(indexTarget)).getX();
 					posyTarget = target.get(tempTarget.get(indexTarget)).getY();
@@ -111,22 +113,67 @@ public class Enemy implements Runnable {
 						tempTarget.clear();
 					}
 
-				}
+				}*/
 				try {
-					TimeUnit.SECONDS.sleep(random.nextInt(MOV_MAX - MOV_MIN + 1) + MOV_MIN);
+					TimeUnit.MILLISECONDS.sleep(random.nextInt(MOV_MAX - MOV_MIN + 1) + MOV_MIN);
 				} catch (InterruptedException e) {
 				}
 			} else {
-				
-				/*boolean okAction = setAction(random.nextInt(CASES));
-				while (!okAction)
-					okAction = setAction(random.nextInt(CASES));
+
+				if (!checkPosition) {
+					for (int i = 0; i < world.getDimension(); i++) {
+						for (int j = 0; j < world.getDimension(); j++) {
+							if (world.getColorMatrix()[i][j] == Color.GREY && firstCheck) {
+								tempPos = new Position(j, i);
+								firstCheck=false;
+							} else if (world.getColorMatrix()[i][j] == Color.GREY) {
+								int cont1 = checkMatrix(world.getColorMatrix(), i, j);
+								if (cont < cont1) {
+									cont = cont1;
+									tempPos = new Position(j, i);
+								} else if (cont == cont1) {
+									int xf = player.getX() - j;
+									int yf = player.getY() - i;
+									double shift = Math.sqrt(Math.abs(xf) ^ 2 + Math.abs(yf) ^ 2);
+									xf = player.getX() - tempPos.getX();
+									yf = player.getY() - tempPos.getY();
+									if (shift - Math.sqrt(Math.abs(xf) ^ 2 + Math.abs(yf) ^ 2) < 0)
+										tempPos = new Position(j, i);
+								}
+							}
+						}
+					}
+					checkPosition = true;
+				} else {
+					if (player.getX() - tempPos.getX() > 0) {
+						player.moveLeft();
+					} else if (player.getX() - tempPos.getX() < 0) {
+						player.moveRight();
+					} else if (player.getY() - tempPos.getY() > 0) {
+						player.moveUp();
+					} else if (player.getY() - tempPos.getY() < 0) {
+						player.moveDown();
+					} else {
+						checkPosition = false;
+						player.placeBomb(player.getPosition());
+					}
+				}
 				try {
-					TimeUnit.SECONDS.sleep(random.nextInt(THINK_MAX - THINK_MIN + 1) + THINK_MIN);
+					TimeUnit.MILLISECONDS.sleep(random.nextInt(THINK_MAX - THINK_MIN + 1) + THINK_MIN);
 				} catch (InterruptedException e) {
-				}*/
+				}
 			}
+			/*
+			 * else {
+			 * 
+			 * } boolean okAction = setAction(random.nextInt(CASES)); while (!okAction)
+			 * okAction = setAction(random.nextInt(CASES)); try {
+			 * TimeUnit.SECONDS.sleep(random.nextInt(THINK_MAX - THINK_MIN + 1) +
+			 * THINK_MIN); } catch (InterruptedException e) { }
+			 */
+			firstCheck = true;
 		}
+
 	}
 
 	private boolean setAction(int action) {
@@ -158,18 +205,27 @@ public class Enemy implements Runnable {
 		return false;
 
 	}
-	
-	private int checkMatrix(Color[][] world,int x , int y){
-		int cont =0;
-		if(world[y][x]==player.getColor()) cont++;
-		if(y-1>=0&&world[y-1][x]==player.getColor()) cont++;
-		if(y+1<world.length&&world[y+1][x]==player.getColor()) cont++;
-		if(y-1>=0&&x-1>=0&&world[y-1][x-1]==player.getColor()) cont++;
-		if(y-1>=0&&x+1<world.length&&world[y-1][x+1]==player.getColor()) cont++;
-		if(x-1>=0&&world[y][x-1]==player.getColor()) cont++;
-		if(x+1<world.length&&world[y][x+1]==player.getColor()) cont++;
-		if(y+1<world.length&&x-1>=0&&world[y-1][x-1]==player.getColor()) cont++;
-		if(y+1<world.length&&x+1<world.length&&world[y-1][x+1]==player.getColor()) cont++;
+
+	private int checkMatrix(Color[][] world, int x, int y) {
+		int cont = 0;
+		if (world[y][x] == Color.GREY)
+			cont++;
+		if (y - 1 >= 0 && world[y - 1][x] == Color.GREY)
+			cont++;
+		if (y + 1 < world.length && world[y + 1][x] == Color.GREY)
+			cont++;
+		if (y - 1 >= 0 && x - 1 >= 0 && world[y - 1][x - 1] == Color.GREY)
+			cont++;
+		if (y - 1 >= 0 && x + 1 < world.length && world[y - 1][x + 1] == Color.GREY)
+			cont++;
+		if (x - 1 >= 0 && world[y][x - 1] == Color.GREY)
+			cont++;
+		if (x + 1 < world.length && world[y][x + 1] == Color.GREY)
+			cont++;
+		if (y + 1 < world.length && x - 1 >= 0 && world[y + 1][x - 1] == Color.GREY)
+			cont++;
+		if (y - 1 >= 0 && x + 1 < world.length && world[y - 1][x + 1] == Color.GREY)
+			cont++;
 		return cont;
 	}
 
