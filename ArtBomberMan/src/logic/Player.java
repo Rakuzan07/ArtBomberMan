@@ -56,6 +56,7 @@ public class Player {
 			}
 			if(okInsert){
 				inkTank--;
+				System.out.println(p);
 				bombPosition.add(p);
 				new Thread(new Bomb(p)).start();
 			}
@@ -85,9 +86,12 @@ public class Player {
 		return position.getY();
 	}
 	
+	public ArrayList<Position> getBombPosition(){
+		return bombPosition;
+	}
 	
 	public final boolean equals(Object arg0) {
-		return color.equals(arg0);
+		return color==(((Player)arg0).color);
 	}
 
 	public final int hashCode() {
@@ -106,30 +110,53 @@ public class Player {
 		return color;
 	}
 	
+	public World getWorld(){
+		return world;
+	}
+	
 	public void moveUp() {
 		if(world==null) throw new UnassignedWorldException();
-		if(position.getY()-1>=0) position.setY(position.getY()-1);
+		if(position.getY()-1>=0) {
+			position.setY(position.getY()-1);
+			if(world.getColorMatrix()[position.getY()][position.getX()]==color) this.reloadTank();
+		}
 	}
 
 	public void moveDown() {
 		if(world==null) throw new UnassignedWorldException();
-		if(position.getY()+1<world.getDimension()) position.setY(position.getY()+1);
+		if(position.getY()+1<world.getDimension()) {
+			position.setY(position.getY()+1);
+			if(world.getColorMatrix()[position.getY()][position.getX()]==color) this.reloadTank();
+		}
 	}
 
 	public void moveLeft() {
 		if(world==null) throw new UnassignedWorldException();
-		if(position.getX()-1>=0) position.setX(position.getX()-1);
+		if(position.getX()-1>=0) {
+			position.setX(position.getX()-1);
+			if(world.getColorMatrix()[position.getY()][position.getX()]==color) this.reloadTank();
+		};
 	}
 
 	public void moveRight() {
 		if(world==null) throw new UnassignedWorldException();
-		if(position.getX()+1<world.getDimension()) position.setX(position.getX()-1);
+		if(position.getX()+1<world.getDimension()){
+			position.setX(position.getX()+1);
+			if(world.getColorMatrix()[position.getY()][position.getX()]==color) this.reloadTank();
+		}
 	}
 	
+	public Position getPosition(){
+		return position;
+	}
 		
 	
 	public void setWorld(World world){
 		this.world=world;
+	}
+	
+	public String toString() {
+		return color.toString();
 	}
 	
 	private class Bomb implements Runnable{
@@ -153,7 +180,7 @@ public class Player {
 				w.startVictoryControl();
 			    if(w.checkVictory(Player.this)) world.setWinningPlayer(Player.this);
 			    else w.endVictoryControl();
-			}catch(InterruptedException e) {}
+			}catch(InterruptedException e) {}	
 		}
 		
 	}

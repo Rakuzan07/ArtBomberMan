@@ -2,6 +2,11 @@ package logic;
 
 public class Position {
 	
+	@Override
+	public String toString() {
+		return "Position [x=" + x + ", y=" + y + "]";
+	}
+
 	private int x , y;
 	
 	public Position (int x ,  int y){
